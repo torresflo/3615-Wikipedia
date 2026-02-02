@@ -3,5 +3,5 @@
     "board": "esp32:esp32:esp32",
     "port": "COM6",
     "programmer": "esptool",
-    "sketch": "Wikipedia.ino"
+    "sketch": "3615-Wikipedia.ino"
 }
