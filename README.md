@@ -49,11 +49,11 @@ I am personally usingVisual Studio Code for the development, but the simplest wa
 3. Install the [Minitel1B library](https://github.com/eserandour/Minitel1B_Hard) as follows:
     - Download Minitel1B library as ZIP file.
     - In Arduino IDE, go to Sketch / Include Library / Add .ZIP Library and select your ZIP file.
-6. Connect your device using USB-C cable.
-7. In Arduino IDE, select the corresponding serial port in Menu Tools/Port.
+4. Connect your device using USB-C cable.
+5. In Arduino IDE, select the corresponding serial port in Menu Tools/Port.
 > [!TIP]
 > If you have difficulties with USB driver, check [this sparkfun article](https://learn.sparkfun.com/tutorials/how-to-install-ch340-drivers/).
-8. Select ESP32 Dev Module in Tools/Board type/ESP32 Arduino.
+6. Select ESP32 Dev Module in Tools/Board type/ESP32 Arduino.
 
 Done! You should be ready to compile and deploy the application.
 
@@ -75,7 +75,7 @@ Press the key `ENVOI` to validate the input.
 
 The board will perform a request to Wikipedia and displays the result on the screen.
 
-![Wikipedia on Minitel image](https://github.com/torresflo/3615-Wikipedia/blob/main/Images/Minitel.webp)
+![Wikipedia on Minitel image](https://github.com/torresflo/3615-Wikipedia/blob/main/Images/Wikipedia.jpg)
 
 Press the key `SUITE` to display the next page and `RETOUR` to display the previous page.
 Press the key `SOMMAIRE` to start a new search.
