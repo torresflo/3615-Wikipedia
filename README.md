@@ -49,11 +49,12 @@ I am personally usingVisual Studio Code for the development, but the simplest wa
 3. Install the [Minitel1B library](https://github.com/eserandour/Minitel1B_Hard) as follows:
     - Download Minitel1B library as ZIP file.
     - In Arduino IDE, go to Sketch / Include Library / Add .ZIP Library and select your ZIP file.
-4. Connect your device using USB-C cable.
-5. In Arduino IDE, select the corresponding serial port in Menu Tools/Port.
+4. Install the [MinitelToolkit library](https://github.com/torresflo/MinitelToolkit) the same way.
+5. Connect your device using USB-C cable.
+6. In Arduino IDE, select the corresponding serial port in Menu Tools/Port.
 > [!TIP]
 > If you have difficulties with USB driver, check [this sparkfun article](https://learn.sparkfun.com/tutorials/how-to-install-ch340-drivers/).
-6. Select ESP32 Dev Module in Tools/Board type/ESP32 Arduino.
+7. Select ESP32 Dev Module in Tools/Board type/ESP32 Arduino.
 
 Done! You should be ready to compile and deploy the application.
 
@@ -62,7 +63,7 @@ Done! You should be ready to compile and deploy the application.
 Follow the instructions above then clone the repo (`git clone https:://github.com/torresflo/3615-Wikipedia.git`).
 
 > [!IMPORTANT]
-> Edit the variables `ssid` and `password` at the start of the file `3615-Wikipedia.ino` to configure Wi-Fi connection.
+> Copy `src/Secrets.h.example` to `src/Secrets.h` and set `WIFI_SSID` and `WIFI_PASSWORD` to configure the Wi-Fi connection. `src/Secrets.h` is gitignored, so your credentials are never committed.
 
 You can now deploy and run `3615-Wikipedia.ino` on your development board.
 

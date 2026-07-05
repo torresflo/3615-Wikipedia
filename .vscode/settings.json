@@ -1,0 +1,18 @@
+{
+    // Excluding the generated directories keeps your file view clean and speeds up search.
+    "files.exclude": {
+        "Build/**": true,
+        "build/**": true,
+    },
+    "search.exclude": {
+        "Build/**": true,
+        "build/**": true,
+    },
+
+    "C_Cpp.files.exclude": {
+        "Build/**": true,
+        "build/**": true,
+    },
+
+    "C_Cpp.exclusionPolicy": "checkFilesAndFolders"
+}

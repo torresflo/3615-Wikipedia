@@ -7,8 +7,17 @@
 !.vscode/*.code-snippets
 !*.code-workspace
 
+*.code-workspace
+
 # Built Visual Studio Code Extensions
 *.vsix
 
 # Build
 Build/*
+
+# Wi-Fi credentials — copy src/Secrets.h.example to src/Secrets.h and fill in
+src/Secrets.h
+
+# MD files
+*.md
+!README.md
