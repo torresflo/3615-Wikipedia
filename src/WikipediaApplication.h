@@ -9,6 +9,7 @@
 class WikipediaApplication
 {
 public:
+    explicit WikipediaApplication();
     void setup();
     void loop();
 
@@ -31,9 +32,6 @@ private:
 
     static const char* ssid;
     static const char* password;
-
-    static const unsigned int RESULT_BODY_START_LINE;
-    static const unsigned int RESULT_BODY_END_LINE;
 
     ExtendedMinitel minitel;
     WikipediaClient wikipediaClient;

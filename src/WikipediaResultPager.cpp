@@ -1,20 +1,27 @@
 #include "WikipediaResultPager.h"
 
-void WikipediaResultPager::reset(const String& newText)
+#include "WikipediaClient.h"
+
+void WikipediaResultPager::reset()
 {
-    text = newText;
     pageSeparators.clear();
     pageSeparators.push_back(0);
     currentPageIndex = 0;
 }
 
+WikipediaResultPager::WikipediaResultPager(WikipediaClient &client)
+    :wikipediaClient(client)
+{}
+
 bool WikipediaResultPager::isEmpty() const
 {
-    return text.length() == 0;
+    return wikipediaClient.getArticle().isEmpty();
 }
 
 void WikipediaResultPager::displayPage(ExtendedMinitel& minitel, int pageIndex, unsigned int startLine, unsigned int endLine)
 {
+    const String& text = wikipediaClient.getArticle().getSummary();
+
     if (pageIndex < 0)
         pageIndex = 0;
     if (pageIndex >= static_cast<int>(pageSeparators.size()))

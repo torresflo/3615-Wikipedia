@@ -7,12 +7,14 @@
 const char* WikipediaApplication::ssid = WIFI_SSID;
 const char* WikipediaApplication::password = WIFI_PASSWORD;
 
-const unsigned int WikipediaApplication::RESULT_BODY_START_LINE = 3;
-const unsigned int WikipediaApplication::RESULT_BODY_END_LINE = maxPositionY;
+WikipediaApplication::WikipediaApplication()
+    :resultPager(wikipediaClient)
+{}
 
 void WikipediaApplication::setup()
 {
     minitel.defaultSetup();
+    debugBegin();
 
     currentStep = Step::WifiLoading;
     minitel.displayNewPage("Loading...");
@@ -46,14 +48,14 @@ void WikipediaApplication::loop()
 
 void WikipediaApplication::connectToWifi()
 {
-    minitel.print("Connection to Wi-fi...");
+    minitel.displayString("Connection to Wi-fi...", 1, 3);
+    minitel.moveCursorXY(1, 2);
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
         minitel.print(".");
     }
-    minitel.println("DONE");
 }
 
 void WikipediaApplication::showPromptPage()
@@ -63,7 +65,8 @@ void WikipediaApplication::showPromptPage()
     stringEnteredByUser = "";
 
     minitel.displayNewPage("3615 Wikipedia");
-    minitel.println("What are you searching for?");
+    minitel.displayString("What are you searching for?", 1, 3);
+    minitel.moveCursorXY(1, 4);
     minitel.cursor();
 }
 
@@ -71,17 +74,16 @@ void WikipediaApplication::showResultPage(int pageIndex)
 {
     minitel.displayNewPage("3615 Wikipedia");
 
-    minitel.attributs(CARACTERE_ROUGE);
-    minitel.println("Result for \"" + stringEnteredByUser + "\":");
-    minitel.attributs(CARACTERE_BLANC);
-
     if (resultPager.isEmpty())
     {
-        minitel.println("We found nothing :(");
+        minitel.displayString("We found nothing :(", 1, 3);
     }
     else
     {
-        resultPager.displayPage(minitel, pageIndex, RESULT_BODY_START_LINE, RESULT_BODY_END_LINE);
+        minitel.attributs(CARACTERE_ROUGE);
+        minitel.displayString("Result for " + stringEnteredByUser + " (page " + String(pageIndex + 1) + "):", 1, 3);
+        minitel.attributs(CARACTERE_BLANC);
+        resultPager.displayPage(minitel, pageIndex, 5, maxPositionY);
     }
 
     currentStep = Step::DisplayResult;
@@ -119,17 +121,17 @@ void WikipediaApplication::handleUserInputStep()
 void WikipediaApplication::handleHttpRequestStep()
 {
     minitel.displayNewPage("3615 Wikipedia");
-    minitel.print("Performing search on Wikipedia...");
+    minitel.displayString("Performing search on Wikipedia...", 1, 3);
 
     if (WiFi.status() == WL_CONNECTED)
     {
-        String extract;
-        if (wikipediaClient.search(stringEnteredByUser, extract))
-        {
-            resultPager.reset(extract);
-            showResultPage(resultPager.getCurrentPageIndex());
-        }
+        wikipediaClient.search(stringEnteredByUser);
+        resultPager.reset();
+        showResultPage(resultPager.getCurrentPageIndex());
+        currentStep = Step::DisplayResult;
     }
+    else
+        currentStep = Step::WifiLoading;
 }
 
 void WikipediaApplication::handleDisplayResultStep()

@@ -4,13 +4,21 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+#include "WikipediaArticle.h"
+
 class WikipediaClient
 {
 public:
-    bool search(const String& query, String& extractOut);
+    bool search(const String& query);
+
+    const WikipediaArticle& getArticle() const;
 
 private:
-    JsonVariant findNestedKey(JsonObject obj, const char* key);
+    JsonObject getFirstPage(JsonDocument& document);
+    void parseExtract(const String& extract);
+    static bool parseSectionHeader(const String& line, int& levelOut, String& titleOut);
+
+    WikipediaArticle article;
 
     static const char* serverPathPart1;
     static const char* serverPathPart2;
