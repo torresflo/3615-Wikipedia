@@ -1,7 +1,5 @@
 #include "WikiTextHelper.h"
 
-#include <vector>
-
 bool WikiTextHelper::isBlockTagName(const String& name)
 {
     return name == "p" || name == "br" || name == "div" || name == "li" ||
@@ -99,228 +97,292 @@ bool WikiTextHelper::isDropLinkTarget(const String& text, unsigned int start, un
 
 void WikiTextHelper::toPlainText(String& text)
 {
-    const unsigned int length = text.length();
+    WikiTextHelper parser(text);
+    parser.run();
+}
 
-    unsigned int writeIndex = 0;
-    bool lastWasSpace = true; // trims leading spaces
-    int newlineRun = 2;       // trims leading newlines
+WikiTextHelper::WikiTextHelper(String& text)
+    : text(text), length(text.length())
+{}
 
-    auto emit = [&](char c)
+bool WikiTextHelper::atLineStart() const
+{
+    return newlineRun > 0;
+}
+
+void WikiTextHelper::emit(char c)
+{
+    if (c == '\n')
     {
-        if (c == '\n')
+        if (newlineRun >= 2)
+            return;
+        text.setCharAt(writeIndex++, '\n');
+        newlineRun++;
+        lastWasSpace = false;
+    }
+    else if (c == ' ' || c == '\t' || c == '\r')
+    {
+        if (newlineRun > 0 || lastWasSpace)
+            return;
+        text.setCharAt(writeIndex++, ' ');
+        lastWasSpace = true;
+    }
+    else
+    {
+        text.setCharAt(writeIndex++, c);
+        lastWasSpace = false;
+        newlineRun = 0;
+    }
+}
+
+void WikiTextHelper::resyncEmitState()
+{
+    if (writeIndex == 0)
+    {
+        lastWasSpace = true;
+        newlineRun = 2;
+        return;
+    }
+
+    char previous = text[writeIndex - 1];
+    if (previous == '\n')
+    {
+        lastWasSpace = false;
+        newlineRun = 1;
+    }
+    else if (previous == ' ')
+    {
+        lastWasSpace = true;
+        newlineRun = 0;
+    }
+    else
+    {
+        lastWasSpace = false;
+        newlineRun = 0;
+    }
+}
+
+void WikiTextHelper::skipNested(char open1, char open2, char close1, char close2)
+{
+    int depth = 0;
+    unsigned int i = readIndex;
+    while (i + 1 < length)
+    {
+        if (text[i] == open1 && text[i + 1] == open2)
         {
-            if (newlineRun >= 2)
-                return;
-            text.setCharAt(writeIndex++, '\n');
-            newlineRun++;
-            lastWasSpace = false;
+            depth++;
+            i += 2;
         }
-        else if (c == ' ' || c == '\t' || c == '\r')
+        else if (text[i] == close1 && text[i + 1] == close2)
         {
-            if (newlineRun > 0 || lastWasSpace)
-                return;
-            text.setCharAt(writeIndex++, ' ');
-            lastWasSpace = true;
+            depth--;
+            i += 2;
+            if (depth == 0)
+                break;
         }
         else
-        {
-            text.setCharAt(writeIndex++, c);
-            lastWasSpace = false;
-            newlineRun = 0;
-        }
-    };
+            i++;
+    }
+    readIndex = (depth != 0) ? length : i;
+}
 
-    // Restores the emit state after a manual rewind of writeIndex (used by wikilinks
-    // that discard their target once a '|' label separator is found).
-    auto resyncEmitState = [&]()
+void WikiTextHelper::handleTag()
+{
+    // HTML comment
+    if (readIndex + 3 < length && text[readIndex + 1] == '!' &&
+        text[readIndex + 2] == '-' && text[readIndex + 3] == '-')
     {
-        if (writeIndex == 0)
+        int end = text.indexOf("-->", readIndex + 4);
+        readIndex = (end < 0) ? length : static_cast<unsigned int>(end) + 3;
+        return;
+    }
+
+    unsigned int nameStart = readIndex + 1;
+    bool closing = (nameStart < length && text[nameStart] == '/');
+    if (closing)
+        nameStart++;
+
+    String name;
+    unsigned int p = nameStart;
+    while (p < length)
+    {
+        char t = text[p];
+        if (t >= 'A' && t <= 'Z')
+            t = t - 'A' + 'a';
+        if ((t >= 'a' && t <= 'z') || (t >= '0' && t <= '9'))
         {
-            lastWasSpace = true;
-            newlineRun = 2;
+            name += t;
+            p++;
         }
         else
+            break;
+    }
+
+    int gt = text.indexOf('>', p);
+    unsigned int tagEnd = (gt < 0) ? length : static_cast<unsigned int>(gt) + 1;
+    bool selfClosing = (gt > 0 && text[gt - 1] == '/');
+
+    // Drop these elements together with their content.
+    if (!closing && !selfClosing &&
+        (name == "style" || name == "table" || name == "script" || name == "sup" || name == "ref"))
+    {
+        String closeTag = "</" + name + ">";
+        int end = text.indexOf(closeTag, tagEnd);
+        readIndex = (end < 0) ? length : static_cast<unsigned int>(end) + closeTag.length();
+        return;
+    }
+
+    if (isBlockTagName(name))
+        emit('\n');
+
+    readIndex = tagEnd;
+}
+
+void WikiTextHelper::handleEntity()
+{
+    unsigned int index = readIndex + 1;
+    char decoded = decodeEntity(text, index);
+    if (decoded != 0)
+    {
+        emit(decoded);
+        readIndex = index;
+        return;
+    }
+    emit('&');
+    readIndex++;
+}
+
+void WikiTextHelper::handleWikilink()
+{
+    if (isDropLinkTarget(text, readIndex + 2, length))
+    {
+        // File/Image/Category/Media link: drop entirely, nesting-aware.
+        skipNested('[', '[', ']', ']');
+        return;
+    }
+
+    // Normal wikilink: keep emitting inner text; a later '|' discards the target.
+    linkStack.push_back(writeIndex);
+    readIndex += 2;
+}
+
+void WikiTextHelper::handleExternalLink()
+{
+    // External link [url label] -> keep only the label; bare [url] is dropped.
+    bool isScheme = text.startsWith("http", readIndex + 1) ||
+                    text.startsWith("//", readIndex + 1);
+    if (isScheme)
+    {
+        int close = text.indexOf(']', readIndex + 1);
+        unsigned int end = (close < 0) ? length : static_cast<unsigned int>(close);
+        unsigned int s = readIndex + 1;
+        while (s < end && text[s] != ' ' && text[s] != '\t')
+            s++;
+        for (unsigned int k = s + 1; k < end; k++)
+            emit(text[k]);
+        readIndex = (close < 0) ? length : end + 1;
+        return;
+    }
+    emit('[');
+    readIndex++;
+}
+
+void WikiTextHelper::handleMagicWord()
+{
+    // Behaviour switch magic word, e.g. __TOC__ / __NOTOC__.
+    int end = text.indexOf("__", readIndex + 2);
+    if (end > static_cast<int>(readIndex + 2))
+    {
+        bool allUpper = true;
+        for (int k = readIndex + 2; k < end; k++)
         {
-            char previous = text[writeIndex - 1];
-            if (previous == '\n')
+            char ch = text[k];
+            if (!(ch >= 'A' && ch <= 'Z'))
             {
-                lastWasSpace = false;
-                newlineRun = 1;
-            }
-            else if (previous == ' ')
-            {
-                lastWasSpace = true;
-                newlineRun = 0;
-            }
-            else
-            {
-                lastWasSpace = false;
-                newlineRun = 0;
+                allUpper = false;
+                break;
             }
         }
-    };
+        if (allUpper && (end - static_cast<int>(readIndex + 2)) <= 20)
+        {
+            readIndex = static_cast<unsigned int>(end) + 2;
+            return;
+        }
+    }
+    emit('_');
+    readIndex++;
+}
 
-    std::vector<unsigned int> linkStack; // write positions of open, kept wikilinks
+void WikiTextHelper::handleQuotes()
+{
+    // Runs of 2+ apostrophes are bold/italic markers; a lone one is a real apostrophe.
+    unsigned int q = readIndex;
+    while (q < length && text[q] == '\'')
+        q++;
+    if (q - readIndex >= 2)
+    {
+        readIndex = q;
+        return;
+    }
+    emit('\'');
+    readIndex++;
+}
 
-    unsigned int readIndex = 0;
+void WikiTextHelper::handleHeadingLine()
+{
+    // Heading line: == Title == -> drop the whole line
+    while (readIndex < length && text[readIndex] != '\n')
+        readIndex++;
+}
+
+void WikiTextHelper::handleListMarkers()
+{
+    // List / indentation markers at line start.
+    while (readIndex < length &&
+           (text[readIndex] == '*' || text[readIndex] == '#' ||
+            text[readIndex] == ':' || text[readIndex] == ';'))
+        readIndex++;
+    while (readIndex < length && (text[readIndex] == ' ' || text[readIndex] == '\t'))
+        readIndex++;
+}
+
+void WikiTextHelper::handleHorizontalRule()
+{
+    // Horizontal rule: a line of 4+ dashes.
+    unsigned int d = readIndex;
+    while (d < length && text[d] == '-')
+        d++;
+    if (d - readIndex >= 4)
+    {
+        while (d < length && text[d] != '\n')
+            d++;
+        readIndex = d;
+        return;
+    }
+    emit('-');
+    readIndex++;
+}
+
+void WikiTextHelper::run()
+{
     while (readIndex < length)
     {
         char c = text[readIndex];
 
         if (c == '<')
-        {
-            // HTML comment
-            if (readIndex + 3 < length && text[readIndex + 1] == '!' &&
-                text[readIndex + 2] == '-' && text[readIndex + 3] == '-')
-            {
-                int end = text.indexOf("-->", readIndex + 4);
-                readIndex = (end < 0) ? length : static_cast<unsigned int>(end) + 3;
-                continue;
-            }
-
-            unsigned int nameStart = readIndex + 1;
-            bool closing = (nameStart < length && text[nameStart] == '/');
-            if (closing)
-                nameStart++;
-
-            String name;
-            unsigned int p = nameStart;
-            while (p < length)
-            {
-                char t = text[p];
-                if (t >= 'A' && t <= 'Z')
-                    t = t - 'A' + 'a';
-                if ((t >= 'a' && t <= 'z') || (t >= '0' && t <= '9'))
-                {
-                    name += t;
-                    p++;
-                }
-                else
-                    break;
-            }
-
-            int gt = text.indexOf('>', p);
-            unsigned int tagEnd = (gt < 0) ? length : static_cast<unsigned int>(gt) + 1;
-            bool selfClosing = (gt > 0 && text[gt - 1] == '/');
-
-            // Drop these elements together with their content.
-            if (!closing && !selfClosing &&
-                (name == "style" || name == "table" || name == "script" || name == "sup" || name == "ref"))
-            {
-                String closeTag = "</" + name + ">";
-                int end = text.indexOf(closeTag, tagEnd);
-                readIndex = (end < 0) ? length : static_cast<unsigned int>(end) + closeTag.length();
-                continue;
-            }
-
-            if (isBlockTagName(name))
-                emit('\n');
-
-            readIndex = tagEnd;
-            continue;
-        }
+            handleTag();
         else if (c == '&')
-        {
-            unsigned int index = readIndex + 1;
-            char decoded = decodeEntity(text, index);
-            if (decoded != 0)
-            {
-                emit(decoded);
-                readIndex = index;
-                continue;
-            }
-            emit('&');
-            readIndex++;
-            continue;
-        }
+            handleEntity();
         else if (c == '{' && readIndex + 1 < length && text[readIndex + 1] == '{')
-        {
-            // Template: drop entirely, nesting-aware.
-            int depth = 0;
-            unsigned int i = readIndex;
-            while (i + 1 < length)
-            {
-                if (text[i] == '{' && text[i + 1] == '{')
-                {
-                    depth++;
-                    i += 2;
-                }
-                else if (text[i] == '}' && text[i + 1] == '}')
-                {
-                    depth--;
-                    i += 2;
-                    if (depth == 0)
-                        break;
-                }
-                else
-                    i++;
-            }
-            readIndex = (depth != 0) ? length : i;
-            continue;
-        }
+            skipNested('{', '{', '}', '}'); // template
         else if (c == '{' && readIndex + 1 < length && text[readIndex + 1] == '|')
-        {
-            // Table: drop entirely, nesting-aware.
-            int depth = 0;
-            unsigned int i = readIndex;
-            while (i + 1 < length)
-            {
-                if (text[i] == '{' && text[i + 1] == '|')
-                {
-                    depth++;
-                    i += 2;
-                }
-                else if (text[i] == '|' && text[i + 1] == '}')
-                {
-                    depth--;
-                    i += 2;
-                    if (depth == 0)
-                        break;
-                }
-                else
-                    i++;
-            }
-            readIndex = (depth != 0) ? length : i;
-            continue;
-        }
+            skipNested('{', '|', '|', '}'); // table
         else if (c == '[' && readIndex + 1 < length && text[readIndex + 1] == '[')
-        {
-            if (isDropLinkTarget(text, readIndex + 2, length))
-            {
-                // File/Image/Category/Media link: drop entirely, nesting-aware.
-                int depth = 0;
-                unsigned int i = readIndex;
-                while (i + 1 < length)
-                {
-                    if (text[i] == '[' && text[i + 1] == '[')
-                    {
-                        depth++;
-                        i += 2;
-                    }
-                    else if (text[i] == ']' && text[i + 1] == ']')
-                    {
-                        depth--;
-                        i += 2;
-                        if (depth == 0)
-                            break;
-                    }
-                    else
-                        i++;
-                }
-                readIndex = (depth != 0) ? length : i;
-                continue;
-            }
-
-            // Normal wikilink: keep emitting inner text; a later '|' discards the target.
-            linkStack.push_back(writeIndex);
-            readIndex += 2;
-            continue;
-        }
+            handleWikilink();
         else if (c == ']' && readIndex + 1 < length && text[readIndex + 1] == ']' && !linkStack.empty())
         {
             linkStack.pop_back();
             readIndex += 2;
-            continue;
         }
         else if (c == '|' && !linkStack.empty())
         {
@@ -328,108 +390,24 @@ void WikiTextHelper::toPlainText(String& text)
             writeIndex = linkStack.back();
             resyncEmitState();
             readIndex++;
-            continue;
         }
         else if (c == '[')
-        {
-            // External link [url label] -> keep only the label; bare [url] is dropped.
-            bool isScheme = text.startsWith("http", readIndex + 1) ||
-                            text.startsWith("//", readIndex + 1);
-            if (isScheme)
-            {
-                int close = text.indexOf(']', readIndex + 1);
-                unsigned int end = (close < 0) ? length : static_cast<unsigned int>(close);
-                unsigned int s = readIndex + 1;
-                while (s < end && text[s] != ' ' && text[s] != '\t')
-                    s++;
-                for (unsigned int k = s + 1; k < end; k++)
-                    emit(text[k]);
-                readIndex = (close < 0) ? length : end + 1;
-                continue;
-            }
-            emit('[');
-            readIndex++;
-            continue;
-        }
+            handleExternalLink();
         else if (c == '_' && readIndex + 1 < length && text[readIndex + 1] == '_')
-        {
-            // Behaviour switch magic word, e.g. __TOC__ / __NOTOC__.
-            int end = text.indexOf("__", readIndex + 2);
-            if (end > static_cast<int>(readIndex + 2))
-            {
-                bool allUpper = true;
-                for (int k = readIndex + 2; k < end; k++)
-                {
-                    char ch = text[k];
-                    if (!(ch >= 'A' && ch <= 'Z'))
-                    {
-                        allUpper = false;
-                        break;
-                    }
-                }
-                if (allUpper && (end - static_cast<int>(readIndex + 2)) <= 20)
-                {
-                    readIndex = static_cast<unsigned int>(end) + 2;
-                    continue;
-                }
-            }
-            emit('_');
-            readIndex++;
-            continue;
-        }
+            handleMagicWord();
         else if (c == '\'')
+            handleQuotes();
+        else if (atLineStart() && c == '=')
+            handleHeadingLine();
+        else if (atLineStart() && (c == '*' || c == '#' || c == ':' || c == ';'))
+            handleListMarkers();
+        else if (atLineStart() && c == '-')
+            handleHorizontalRule();
+        else
         {
-            // Runs of 2+ apostrophes are bold/italic markers; a lone one is a real apostrophe.
-            unsigned int q = readIndex;
-            while (q < length && text[q] == '\'')
-                q++;
-            if (q - readIndex >= 2)
-            {
-                readIndex = q;
-                continue;
-            }
-            emit('\'');
+            emit(c);
             readIndex++;
-            continue;
         }
-        else if (newlineRun > 0 && c == '=')
-        {
-            // Heading line: == Title == -> drop the whole line (titles are shown separately).
-            while (readIndex < length && text[readIndex] != '\n')
-                readIndex++;
-            continue;
-        }
-        else if (newlineRun > 0 && (c == '*' || c == '#' || c == ':' || c == ';'))
-        {
-            // List / indentation markers at line start.
-            while (readIndex < length &&
-                   (text[readIndex] == '*' || text[readIndex] == '#' ||
-                    text[readIndex] == ':' || text[readIndex] == ';'))
-                readIndex++;
-            while (readIndex < length && (text[readIndex] == ' ' || text[readIndex] == '\t'))
-                readIndex++;
-            continue;
-        }
-        else if (newlineRun > 0 && c == '-')
-        {
-            // Horizontal rule: a line of 4+ dashes.
-            unsigned int d = readIndex;
-            while (d < length && text[d] == '-')
-                d++;
-            if (d - readIndex >= 4)
-            {
-                while (d < length && text[d] != '\n')
-                    d++;
-                readIndex = d;
-                continue;
-            }
-            emit('-');
-            readIndex++;
-            continue;
-        }
-
-        emit(c);
-        readIndex++;
     }
 
     // Trim trailing whitespace.
