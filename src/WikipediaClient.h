@@ -1,6 +1,8 @@
 #ifndef WIKIPEDIACLIENT_H
 #define WIKIPEDIACLIENT_H
 
+#include <vector>
+
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
@@ -9,19 +11,28 @@
 class WikipediaClient
 {
 public:
-    bool search(const String& query);
+    struct SearchResult
+    {
+        String title;
+        long pageId;
+    };
 
+    bool search(const String& query);
+    bool fetchSectionList(long pageId);
+    bool fetchSectionContent(long pageId, int sectionIndex, String& outText);
+
+    const std::vector<SearchResult>& getSearchResults() const;
+    const String& getSuggestion() const;
     const WikipediaArticle& getArticle() const;
 
 private:
-    JsonObject getFirstPage(JsonDocument& document);
-    void parseExtract(const String& extract);
-    static bool parseSectionHeader(const String& line, int& levelOut, String& titleOut);
+    static bool isNoiseSection(const String& title);
 
+    static const unsigned int maxSectionLength;
+
+    std::vector<SearchResult> searchResults;
+    String suggestion;
     WikipediaArticle article;
-
-    static const char* serverPathPart1;
-    static const char* serverPathPart2;
 };
 
 #endif

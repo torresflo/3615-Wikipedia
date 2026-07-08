@@ -1,6 +1,8 @@
 #ifndef WIKIPEDIAAPPLICATION_H
 #define WIKIPEDIAAPPLICATION_H
 
+#include <memory>
+
 #include <MinitelToolkit.h>
 
 #include "WikipediaClient.h"
@@ -18,27 +20,40 @@ private:
     {
         WifiLoading,
         UserInput,
-        HttpRequest,
+        SearchRequest,
+        ResultSelection,
+        DidYouMean,
+        ArticleRequest,
         DisplayResult
     };
 
     void connectToWifi();
     void showPromptPage();
-    void showResultPage(int pageIndex);
+    void showResultSelectionPage();
+    void showDidYouMeanPage();
+    void showResultPage();
+    void showLoadingHint();
 
     void handleUserInputStep();
-    void handleHttpRequestStep();
+    void handleSearchRequestStep();
+    void handleResultSelectionStep();
+    void handleDidYouMeanStep();
+    void handleArticleRequestStep();
     void handleDisplayResultStep();
 
     static const char* ssid;
     static const char* password;
 
-    ExtendedMinitel minitel;
+    ExtendedMinitelPtr minitel = std::make_shared<ExtendedMinitel>();
     WikipediaClient wikipediaClient;
     WikipediaResultPager resultPager;
 
+    TableViewModelPtr searchResultsModel;
+    TableViewPtr searchResultsView;
+
     Step currentStep = Step::WifiLoading;
     String stringEnteredByUser;
+    long chosenPageId = 0;
 };
 
 #endif

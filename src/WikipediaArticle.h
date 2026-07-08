@@ -12,7 +12,7 @@ public:
     {
         String title;
         int level;
-        String content;
+        int index; // Section index, used to fetch its content on demand
     };
 
     void clear();
@@ -20,24 +20,18 @@ public:
 
     const String& getTitle() const;
     const String& getDescription() const;
-    const String& getSummary() const;
     const std::vector<Section>& getSections() const;
-    const std::vector<String>& getCategories() const;
 
     void setTitle(String&& value);
     void setDescription(String&& value);
-    void setSummary(String&& value);
-    void addSection(String&& title, int level, String&& content);
-    void addCategory(String&& category);
+    void addSection(String&& title, int level, int index);
 
     void printToSerial() const;
 
 private:
     String title;
     String description;
-    String summary;
     std::vector<Section> sections;
-    std::vector<String> categories;
 };
 
 #endif

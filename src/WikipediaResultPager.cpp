@@ -2,43 +2,113 @@
 
 #include "WikipediaClient.h"
 
-void WikipediaResultPager::reset()
-{
-    pageSeparators.clear();
-    pageSeparators.push_back(0);
-    currentPageIndex = 0;
-}
-
 WikipediaResultPager::WikipediaResultPager(WikipediaClient &client)
     :wikipediaClient(client)
 {}
+
+void WikipediaResultPager::reset(long pageId)
+{
+    this->pageId = pageId;
+    loadSection(0);
+}
 
 bool WikipediaResultPager::isEmpty() const
 {
     return wikipediaClient.getArticle().isEmpty();
 }
 
-void WikipediaResultPager::displayPage(ExtendedMinitel& minitel, int pageIndex, unsigned int startLine, unsigned int endLine)
+void WikipediaResultPager::loadSection(int sectionIndex)
 {
-    const String& text = wikipediaClient.getArticle().getSummary();
+    pageSeparators.clear();
+    pageSeparators.push_back(0);
+    currentPageInSection = 0;
+    currentPageIsLastInSection = true;
+    currentSectionText = String();
 
-    if (pageIndex < 0)
-        pageIndex = 0;
-    if (pageIndex >= static_cast<int>(pageSeparators.size()))
-        pageIndex = static_cast<int>(pageSeparators.size()) - 1;
-
-    unsigned int charIndex = pageSeparators.at(pageIndex);
-    unsigned int nextCharIndex = minitel.displayVideotexLines(text, charIndex, startLine, endLine);
-
-    if (nextCharIndex < text.length() && pageIndex + 1 >= static_cast<int>(pageSeparators.size()))
+    const std::vector<WikipediaArticle::Section>& sections = wikipediaClient.getArticle().getSections();
+    if (sectionIndex < 0 || sectionIndex >= static_cast<int>(sections.size()))
     {
-        pageSeparators.push_back(nextCharIndex);
+        currentSectionIndex = 0;
+        return;
     }
 
-    currentPageIndex = pageIndex;
+    currentSectionIndex = sectionIndex;
+    wikipediaClient.fetchSectionContent(pageId, sections.at(sectionIndex).index, currentSectionText);
 }
 
-int WikipediaResultPager::getCurrentPageIndex() const
+bool WikipediaResultPager::nextWillFetch() const
 {
-    return currentPageIndex;
+    int sectionCount = getSectionCount();
+    return currentPageIsLastInSection && (currentSectionIndex + 1 < sectionCount);
+}
+
+bool WikipediaResultPager::previousWillFetch() const
+{
+    return currentPageInSection == 0 && currentSectionIndex > 0;
+}
+
+bool WikipediaResultPager::next()
+{
+    if (!currentPageIsLastInSection)
+    {
+        currentPageInSection++;
+        return true;
+    }
+
+    if (currentSectionIndex + 1 < getSectionCount())
+    {
+        loadSection(currentSectionIndex + 1);
+        return true;
+    }
+
+    return false;
+}
+
+bool WikipediaResultPager::previous()
+{
+    if (currentPageInSection > 0)
+    {
+        currentPageInSection--;
+        return true;
+    }
+
+    if (currentSectionIndex > 0)
+    {
+        loadSection(currentSectionIndex - 1);
+        return true;
+    }
+
+    return false;
+}
+
+void WikipediaResultPager::displayPage(ExtendedMinitelPtr& minitel, unsigned int startLine, unsigned int endLine)
+{
+    unsigned int startChar = pageSeparators.at(currentPageInSection);
+    unsigned int nextChar = minitel->displayVideotexLines(currentSectionText, startChar, startLine, endLine);
+
+    currentPageIsLastInSection = (nextChar >= currentSectionText.length());
+
+    if (!currentPageIsLastInSection && currentPageInSection + 1 >= static_cast<int>(pageSeparators.size()))
+        pageSeparators.push_back(nextChar);
+}
+
+const String& WikipediaResultPager::getCurrentSectionTitle() const
+{
+    const std::vector<WikipediaArticle::Section>& sections = wikipediaClient.getArticle().getSections();
+    return sections.at(currentSectionIndex).title;
+}
+
+int WikipediaResultPager::getCurrentSectionNumber() const
+{
+    return currentSectionIndex + 1;
+}
+
+int WikipediaResultPager::getSectionCount() const
+{
+    return static_cast<int>(wikipediaClient.getArticle().getSections().size());
+}
+
+int WikipediaResultPager::getCurrentPageNumber() const
+{
+    return currentPageInSection + 1;
 }

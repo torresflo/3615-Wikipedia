@@ -12,17 +12,35 @@ class WikipediaResultPager
 public:
     explicit WikipediaResultPager(WikipediaClient& client);
 
-    void reset();
+    void reset(long pageId);
 
     bool isEmpty() const;
-    void displayPage(ExtendedMinitel& minitel, int pageIndex, unsigned int startLine, unsigned int endLine);
-    int getCurrentPageIndex() const;
+
+    // Navigation. Returns true if a redraw is needed
+    bool next();
+    bool previous();
+
+    bool nextWillFetch() const;
+    bool previousWillFetch() const;
+
+    void displayPage(ExtendedMinitelPtr& minitel, unsigned int startLine, unsigned int endLine);
+
+    const String& getCurrentSectionTitle() const;
+    int getCurrentSectionNumber() const; // 1-based
+    int getSectionCount() const;
+    int getCurrentPageNumber() const;    // 1-based, within the current section
 
 private:
-    std::vector<unsigned int> pageSeparators;
-    int currentPageIndex = 0;
+    void loadSection(int sectionIndex);
 
     WikipediaClient& wikipediaClient;
+
+    long pageId = 0;
+    int currentSectionIndex = 0;
+    String currentSectionText;
+    std::vector<unsigned int> pageSeparators;
+    int currentPageInSection = 0;
+    bool currentPageIsLastInSection = true;
 };
 
 #endif
