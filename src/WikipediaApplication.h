@@ -8,6 +8,15 @@
 #include "WikipediaClient.h"
 #include "WikipediaResultPager.h"
 
+#include "Pages/Screen.h"
+#include "Pages/WifiLoadingScreen.h"
+#include "Pages/UserInputScreen.h"
+#include "Pages/SearchRequestScreen.h"
+#include "Pages/ResultSelectionScreen.h"
+#include "Pages/DidYouMeanScreen.h"
+#include "Pages/ArticleRequestScreen.h"
+#include "Pages/ResultScreen.h"
+
 class WikipediaApplication
 {
 public:
@@ -15,44 +24,38 @@ public:
     void setup();
     void loop();
 
+    void setNextScreenId(ScreenId id);
+
+    ExtendedMinitelPtr& getMinitel();
+    WikipediaClient& getClient();
+    WikipediaResultPager& getResultPager();
+
+    const String& getQuery() const;
+    void setQuery(String value);
+
+    long getChosenPageId() const;
+    void setChosenPageId(long value);
+
 private:
-    enum class Step
-    {
-        WifiLoading,
-        UserInput,
-        SearchRequest,
-        ResultSelection,
-        DidYouMean,
-        ArticleRequest,
-        DisplayResult
-    };
-
-    void connectToWifi();
-    void showPromptPage();
-    void showResultSelectionPage();
-    void showDidYouMeanPage();
-    void showResultPage();
-    void showLoadingHint();
-
-    void handleUserInputStep();
-    void handleSearchRequestStep();
-    void handleResultSelectionStep();
-    void handleDidYouMeanStep();
-    void handleArticleRequestStep();
-    void handleDisplayResultStep();
-
-    static const char* ssid;
-    static const char* password;
+    Screen* screenFor(ScreenId id);
+    void switchTo(ScreenId id);
 
     ExtendedMinitelPtr minitel = std::make_shared<ExtendedMinitel>();
     WikipediaClient wikipediaClient;
     WikipediaResultPager resultPager;
 
-    TableViewModelPtr searchResultsModel;
-    TableViewPtr searchResultsView;
+    WifiLoadingScreen wifiLoadingScreen;
+    UserInputScreen userInputScreen;
+    SearchRequestScreen searchRequestScreen;
+    ResultSelectionScreen resultSelectionScreen;
+    DidYouMeanScreen didYouMeanScreen;
+    ArticleRequestScreen articleRequestScreen;
+    ResultScreen resultScreen;
 
-    Step currentStep = Step::WifiLoading;
-    String stringEnteredByUser;
+    Screen* currentScreen = nullptr;
+    ScreenId nextScreenId = ScreenId::UserInput;
+
+    String query;
     long chosenPageId = 0;
 };
 
