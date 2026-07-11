@@ -8,12 +8,16 @@ WelcomeScreen::WelcomeScreen(WikipediaApplication& application)
 
 void WelcomeScreen::setup()
 {
-    stringEnteredByUser = "";
-
     ExtendedMinitelPtr& minitel = application.getMinitel();
     minitel->displayNewPage("3615 Wikipedia");
-    minitel->displayString("What are you searching for?", 1, 3);
-    minitel->moveCursorXY(1, 4);
+
+    minitel->setTextSizeMode(TextSizeMode::DoubleSize);
+    minitel->displayString("3615 Wikipedia", 7, 7);
+    minitel->setTextSizeMode(TextSizeMode::Normal);
+
+    minitel->displayString("Type a subject then press ENVOI", 5, maxPositionY - 1, Color::Cyan);
+
+    minitel->textLineEdit("What are you searching for?", 7, 11, 25);
     minitel->cursor();
 }
 
@@ -22,33 +26,17 @@ bool WelcomeScreen::update(unsigned long key)
     if (key == 0)
         return true;
 
-    switch (key)
-    {
-    case TOUCHE_FLECHE_GAUCHE:
-        break;
+    ExtendedMinitelPtr& minitel = application.getMinitel();
 
-    case TOUCHE_FLECHE_DROITE:
-        break;
+    String enteredText;
+    if (!minitel->updateReadUserString(key, enteredText))
+        return true;
 
-    case ENVOI:
-        if (stringEnteredByUser.length() > 0)
-        {
-            application.setQuery(stringEnteredByUser);
-            application.setNextScreenId(ScreenId::SearchRequest);
-            application.getMinitel()->noCursor();
-            return false;
-        }
-        break;
+    if (enteredText.length() == 0)
+        return true;
 
-    default:
-        {
-            ExtendedMinitelPtr& minitel = application.getMinitel();
-            String keyAsString = minitel->getString(key);
-            minitel->print(keyAsString);
-            stringEnteredByUser += keyAsString;
-            break;
-        }
-    }
-
-    return true;
+    application.setQuery(enteredText);
+    application.setNextScreenId(ScreenId::SearchRequest);
+    minitel->noCursor();
+    return false;
 }

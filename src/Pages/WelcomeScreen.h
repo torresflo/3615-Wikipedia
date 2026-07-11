@@ -12,9 +12,6 @@ public:
 
     void setup() override;
     bool update(unsigned long key) override;
-
-private:
-    String stringEnteredByUser;
 };
 
 #endif
