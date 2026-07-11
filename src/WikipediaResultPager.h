@@ -19,6 +19,7 @@ public:
     // Navigation. Returns true if a redraw is needed
     bool next();
     bool previous();
+    bool goToSection(int sectionIndex);
 
     bool nextWillFetch() const;
     bool previousWillFetch() const;
@@ -32,6 +33,7 @@ public:
 
 private:
     void loadSection(int sectionIndex);
+    void loadSectionSkippingEmpty(int startIndex, int direction);
 
     WikipediaClient& wikipediaClient;
 

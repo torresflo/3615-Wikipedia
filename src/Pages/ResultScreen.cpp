@@ -13,15 +13,12 @@ void ResultScreen::setup()
 
 bool ResultScreen::update(unsigned long key)
 {
-    if (key == 0)
-        return true;
-
     WikipediaResultPager& resultPager = application.getResultPager();
 
     switch (key)
     {
-    case SOMMAIRE:
-        application.setNextScreenId(ScreenId::UserInput);
+    case GUIDE:
+        application.setNextScreenId(ScreenId::SectionList);
         return false;
 
     case SUITE:
@@ -71,5 +68,5 @@ void ResultScreen::showResultPage()
 
 void ResultScreen::showLoadingHint()
 {
-    application.getMinitel()->displayString("Loading...", 1, maxPositionY);
+    application.getMinitel()->displayString("Loading...", minPositionX, maxPositionY);
 }

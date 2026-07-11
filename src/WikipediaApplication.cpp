@@ -11,6 +11,7 @@ WikipediaApplication::WikipediaApplication()
     , didYouMeanScreen(*this)
     , articleRequestScreen(*this)
     , resultScreen(*this)
+    , sectionListScreen(*this)
 {}
 
 ExtendedMinitelPtr& WikipediaApplication::getMinitel()
@@ -59,6 +60,15 @@ void WikipediaApplication::setup()
 void WikipediaApplication::loop()
 {
     unsigned long key = minitel->updatePressedKey();
+
+    switch(key)
+    {
+    case SOMMAIRE:
+        setNextScreenId(ScreenId::UserInput);
+        switchTo(nextScreenId);
+        return;
+    }
+
     if (!currentScreen->update(key))
         switchTo(nextScreenId);
 }
@@ -86,6 +96,8 @@ Screen* WikipediaApplication::screenFor(ScreenId id)
         return &articleRequestScreen;
     case ScreenId::Result:
         return &resultScreen;
+    case ScreenId::SectionList:
+        return &sectionListScreen;
     }
 
     return &userInputScreen;

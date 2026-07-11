@@ -95,6 +95,68 @@ bool WikiTextHelper::isDropLinkTarget(const String& text, unsigned int start, un
     return ns == "file" || ns == "image" || ns == "category" || ns == "media";
 }
 
+int WikiTextHelper::headingLevel(const String& text, unsigned int lineStart, unsigned int lineEnd)
+{
+    unsigned int i = lineStart;
+    while (i < lineEnd && (text[i] == ' ' || text[i] == '\t'))
+        i++;
+
+    unsigned int openStart = i;
+    while (i < lineEnd && text[i] == '=')
+        i++;
+    unsigned int openCount = i - openStart;
+    if (openCount < 1)
+        return 0;
+
+    unsigned int end = lineEnd;
+    while (end > i && (text[end - 1] == ' ' || text[end - 1] == '\t' || text[end - 1] == '\r'))
+        end--;
+
+    unsigned int close = end;
+    while (close > i && text[close - 1] == '=')
+        close--;
+    unsigned int closeCount = end - close;
+
+    // A heading needs equal-sign runs on both sides and a title in between.
+    if (closeCount < 1 || close <= i)
+        return 0;
+
+    return static_cast<int>(openCount < closeCount ? openCount : closeCount);
+}
+
+void WikiTextHelper::stripSubsections(String& text)
+{
+    unsigned int length = text.length();
+    unsigned int lineStart = 0;
+    int sectionLevel = 0;
+    bool sectionHeadingSeen = false;
+
+    while (lineStart < length)
+    {
+        unsigned int lineEnd = lineStart;
+        while (lineEnd < length && text[lineEnd] != '\n')
+            lineEnd++;
+
+        int level = headingLevel(text, lineStart, lineEnd);
+        if (level > 0)
+        {
+            if (!sectionHeadingSeen)
+            {
+                sectionHeadingSeen = true;
+                sectionLevel = level;
+            }
+            else if (level > sectionLevel)
+            {
+                // First subsection heading: drop it and everything after.
+                text.remove(lineStart);
+                return;
+            }
+        }
+
+        lineStart = lineEnd + 1;
+    }
+}
+
 void WikiTextHelper::toPlainText(String& text)
 {
     WikiTextHelper parser(text);

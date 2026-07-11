@@ -99,7 +99,7 @@ bool WikipediaClient::fetchSectionList(long pageId)
         filter["parse"]["title"] = true;
         filter["parse"]["tocdata"]["sections"][0]["line"] = true;
         filter["parse"]["tocdata"]["sections"][0]["index"] = true;
-        filter["parse"]["tocdata"]["sections"][0]["toclevel"] = true;
+        filter["parse"]["tocdata"]["sections"][0]["tocLevel"] = true;
 
         JsonDocument jsonDocument;
         DeserializationError error = deserializeJson(jsonDocument, client.getString(), DeserializationOption::Filter(filter));
@@ -128,7 +128,7 @@ bool WikipediaClient::fetchSectionList(long pageId)
                     if (isNoiseSection(line))
                         continue;
 
-                    int level = section["toclevel"] | 1;
+                    int level = section["tocLevel"] | 1;
                     article.addSection(std::move(line), level, index);
                 }
 
@@ -172,6 +172,7 @@ bool WikipediaClient::fetchSectionContent(long pageId, int sectionIndex, String&
             if (!textVariant.isNull())
             {
                 outText = textVariant.as<String>();
+                WikiTextHelper::stripSubsections(outText);
                 WikiTextHelper::toPlainText(outText);
                 if (outText.length() > maxSectionLength)
                     outText.remove(maxSectionLength);

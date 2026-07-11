@@ -32,10 +32,6 @@ bool DidYouMeanScreen::update(unsigned long key)
         application.setNextScreenId(ScreenId::SearchRequest);
         return false;
 
-    case SOMMAIRE:
-        application.setNextScreenId(ScreenId::UserInput);
-        return false;
-
     default:
         break;
     }

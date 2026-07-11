@@ -35,6 +35,7 @@ bool UserInputScreen::update(unsigned long key)
         {
             application.setQuery(stringEnteredByUser);
             application.setNextScreenId(ScreenId::SearchRequest);
+            application.getMinitel()->noCursor();
             return false;
         }
         break;

@@ -36,6 +36,20 @@ void WikipediaResultPager::loadSection(int sectionIndex)
     wikipediaClient.fetchSectionContent(pageId, sections.at(sectionIndex).index, currentSectionText);
 }
 
+void WikipediaResultPager::loadSectionSkippingEmpty(int startIndex, int direction)
+{
+    int sectionCount = getSectionCount();
+    int sectionIndex = startIndex;
+    loadSection(sectionIndex);
+
+    while (currentSectionText.length() == 0 &&
+           sectionIndex + direction >= 0 && sectionIndex + direction < sectionCount)
+    {
+        sectionIndex += direction;
+        loadSection(sectionIndex);
+    }
+}
+
 bool WikipediaResultPager::nextWillFetch() const
 {
     int sectionCount = getSectionCount();
@@ -57,7 +71,7 @@ bool WikipediaResultPager::next()
 
     if (currentSectionIndex + 1 < getSectionCount())
     {
-        loadSection(currentSectionIndex + 1);
+        loadSectionSkippingEmpty(currentSectionIndex + 1, 1);
         return true;
     }
 
@@ -74,11 +88,20 @@ bool WikipediaResultPager::previous()
 
     if (currentSectionIndex > 0)
     {
-        loadSection(currentSectionIndex - 1);
+        loadSectionSkippingEmpty(currentSectionIndex - 1, -1);
         return true;
     }
 
     return false;
+}
+
+bool WikipediaResultPager::goToSection(int sectionIndex)
+{
+    if (sectionIndex < 0 || sectionIndex >= getSectionCount())
+        return false;
+
+    loadSectionSkippingEmpty(sectionIndex, 1);
+    return true;
 }
 
 void WikipediaResultPager::displayPage(ExtendedMinitelPtr& minitel, unsigned int startLine, unsigned int endLine)

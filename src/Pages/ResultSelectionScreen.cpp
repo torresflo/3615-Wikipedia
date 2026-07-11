@@ -36,10 +36,6 @@ bool ResultSelectionScreen::update(unsigned long key)
 
     switch (key)
     {
-    case SOMMAIRE:
-        application.setNextScreenId(ScreenId::UserInput);
-        return false;
-
     case ENVOI:
     {
         ModelIndex index = searchResultsView->getModelIndexUnderCursor();

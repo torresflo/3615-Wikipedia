@@ -11,6 +11,7 @@ enum class ScreenId
     ResultSelection,
     DidYouMean,
     ArticleRequest,
+    SectionList,
     Result
 };
 

@@ -16,6 +16,7 @@
 #include "Pages/DidYouMeanScreen.h"
 #include "Pages/ArticleRequestScreen.h"
 #include "Pages/ResultScreen.h"
+#include "Pages/SectionListScreen.h"
 
 class WikipediaApplication
 {
@@ -51,6 +52,7 @@ private:
     DidYouMeanScreen didYouMeanScreen;
     ArticleRequestScreen articleRequestScreen;
     ResultScreen resultScreen;
+    SectionListScreen sectionListScreen;
 
     Screen* currentScreen = nullptr;
     ScreenId nextScreenId = ScreenId::UserInput;

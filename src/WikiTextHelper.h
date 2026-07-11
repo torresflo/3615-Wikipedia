@@ -8,6 +8,7 @@
 class WikiTextHelper
 {
 public:
+    static void stripSubsections(String& text);
     static void toPlainText(String& text);
 
 private:
@@ -32,6 +33,9 @@ private:
     void handleHorizontalRule();
     void skipNested(char open1, char open2, char close1, char close2);
 
+    // Returns the heading level of the line [lineStart, lineEnd), or 0 if the
+    // line is not a "== Title ==" style heading.
+    static int headingLevel(const String& text, unsigned int lineStart, unsigned int lineEnd);
     static bool isBlockTagName(const String& name);
     static char decodeEntity(const String& text, unsigned int& index);
     static bool isDropLinkTarget(const String& text, unsigned int start, unsigned int limit);
