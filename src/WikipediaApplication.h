@@ -10,7 +10,7 @@
 
 #include "Pages/Screen.h"
 #include "Pages/WifiLoadingScreen.h"
-#include "Pages/UserInputScreen.h"
+#include "Pages/WelcomeScreen.h"
 #include "Pages/SearchRequestScreen.h"
 #include "Pages/ResultSelectionScreen.h"
 #include "Pages/DidYouMeanScreen.h"
@@ -46,7 +46,7 @@ private:
     WikipediaResultPager resultPager;
 
     WifiLoadingScreen wifiLoadingScreen;
-    UserInputScreen userInputScreen;
+    WelcomeScreen welcomeScreen;
     SearchRequestScreen searchRequestScreen;
     ResultSelectionScreen resultSelectionScreen;
     DidYouMeanScreen didYouMeanScreen;
@@ -55,7 +55,7 @@ private:
     SectionListScreen sectionListScreen;
 
     Screen* currentScreen = nullptr;
-    ScreenId nextScreenId = ScreenId::UserInput;
+    ScreenId nextScreenId = ScreenId::Welcome;
 
     String query;
     long chosenPageId = 0;

@@ -26,7 +26,7 @@ bool WifiLoadingScreen::update(unsigned long key)
 {
     if (WiFi.status() == WL_CONNECTED)
     {
-        application.setNextScreenId(ScreenId::UserInput);
+        application.setNextScreenId(ScreenId::Welcome);
         return false;
     }
 

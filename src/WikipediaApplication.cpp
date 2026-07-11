@@ -5,7 +5,7 @@
 WikipediaApplication::WikipediaApplication()
     : resultPager(wikipediaClient)
     , wifiLoadingScreen(*this)
-    , userInputScreen(*this)
+    , welcomeScreen(*this)
     , searchRequestScreen(*this)
     , resultSelectionScreen(*this)
     , didYouMeanScreen(*this)
@@ -64,7 +64,7 @@ void WikipediaApplication::loop()
     switch(key)
     {
     case SOMMAIRE:
-        setNextScreenId(ScreenId::UserInput);
+        setNextScreenId(ScreenId::Welcome);
         switchTo(nextScreenId);
         return;
     }
@@ -84,8 +84,8 @@ Screen* WikipediaApplication::screenFor(ScreenId id)
     {
     case ScreenId::WifiLoading:
         return &wifiLoadingScreen;
-    case ScreenId::UserInput:
-        return &userInputScreen;
+    case ScreenId::Welcome:
+        return &welcomeScreen;
     case ScreenId::SearchRequest:
         return &searchRequestScreen;
     case ScreenId::ResultSelection:
@@ -100,7 +100,7 @@ Screen* WikipediaApplication::screenFor(ScreenId id)
         return &sectionListScreen;
     }
 
-    return &userInputScreen;
+    return &welcomeScreen;
 }
 
 void WikipediaApplication::switchTo(ScreenId id)

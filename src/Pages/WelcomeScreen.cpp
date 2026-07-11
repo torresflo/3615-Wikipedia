@@ -1,12 +1,12 @@
-#include "UserInputScreen.h"
+#include "WelcomeScreen.h"
 
 #include "WikipediaApplication.h"
 
-UserInputScreen::UserInputScreen(WikipediaApplication& application)
+WelcomeScreen::WelcomeScreen(WikipediaApplication& application)
     : Screen(application)
 {}
 
-void UserInputScreen::setup()
+void WelcomeScreen::setup()
 {
     stringEnteredByUser = "";
 
@@ -17,7 +17,7 @@ void UserInputScreen::setup()
     minitel->cursor();
 }
 
-bool UserInputScreen::update(unsigned long key)
+bool WelcomeScreen::update(unsigned long key)
 {
     if (key == 0)
         return true;

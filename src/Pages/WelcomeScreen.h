@@ -1,14 +1,14 @@
-#ifndef USERINPUTSCREEN_H
-#define USERINPUTSCREEN_H
+#ifndef WELCOMESCREEN_H
+#define WELCOMESCREEN_H
 
 #include <Arduino.h>
 
 #include "Screen.h"
 
-class UserInputScreen : public Screen
+class WelcomeScreen : public Screen
 {
 public:
-    explicit UserInputScreen(WikipediaApplication& application);
+    explicit WelcomeScreen(WikipediaApplication& application);
 
     void setup() override;
     bool update(unsigned long key) override;

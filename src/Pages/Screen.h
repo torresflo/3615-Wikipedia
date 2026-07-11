@@ -6,7 +6,7 @@ class WikipediaApplication;
 enum class ScreenId
 {
     WifiLoading,
-    UserInput,
+    Welcome,
     SearchRequest,
     ResultSelection,
     DidYouMean,
