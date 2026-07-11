@@ -13,6 +13,7 @@ public:
 
 private:
     void showResultPage();
+    void showEmptyResult();
     void showLoadingHint();
 };
 

@@ -48,15 +48,14 @@ void ResultScreen::showResultPage()
     WikipediaClient& client = application.getClient();
     WikipediaResultPager& resultPager = application.getResultPager();
 
-    minitel->displayNewPage(client.getArticle().getTitle());
-
     if (resultPager.isEmpty())
     {
-        minitel->displayString("We found nothing :(", 1, 3);
-        client.getArticle().printToSerial();
+        showEmptyResult();
     }
     else
     {
+        minitel->displayNewPage(client.getArticle().getTitle());
+
         minitel->attributs(CARACTERE_ROUGE);
         minitel->displayString(resultPager.getCurrentSectionTitle(), 1, 3);
         minitel->attributs(CARACTERE_BLANC);
@@ -64,6 +63,29 @@ void ResultScreen::showResultPage()
             String(resultPager.getSectionCount()) + " - page " + String(resultPager.getCurrentPageNumber()), 1, 4);
         resultPager.displayPage(minitel, 6, maxPositionY);
     }
+}
+
+void ResultScreen::showEmptyResult()
+{
+    ExtendedMinitelPtr& minitel = application.getMinitel();
+
+    application.getClient().getArticle().printToSerial();
+
+    minitel->displayNewPage("3615 Wikipedia");
+
+    minitel->setTextSizeMode(TextSizeMode::DoubleSize);
+    minitel->displayString("No results", 11, 8, Color::Red);
+    minitel->setTextSizeMode(TextSizeMode::Normal);
+
+    minitel->displayString("Nothing was found for:", 9, 12);
+
+    String quotedQuery = "\"" + application.getQuery() + "\"";
+    if (quotedQuery.length() > maxPositionX)
+        quotedQuery = quotedQuery.substring(0, maxPositionX);
+    int queryX = (maxPositionX - quotedQuery.length()) / 2 + 1;
+    minitel->displayString(quotedQuery, queryX, 14, Color::Yellow);
+
+    minitel->displayString("Press SOMMAIRE for a new search", 5, maxPositionY - 1, Color::Cyan);
 }
 
 void ResultScreen::showLoadingHint()
