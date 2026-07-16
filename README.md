@@ -43,18 +43,19 @@ You need a [Minitel ESP32 Dongle](https://www.tindie.com/products/iodeo/minitel-
 
 More information about this project can be found on the [Minitel + ESP-32](https://hackaday.io/project/180473-minitel-esp32) project page.
 
-I am personally usingVisual Studio Code for the development, but the simplest way to run the application is by using the Arduino IDE:
+I am personally using Visual Studio Code for the development, but the simplest way to run the application is by using the Arduino IDE:
 1. Install software [Arduino IDE](https://www.arduino.cc/en/software).
 2. Add Arduino-ESP32 core to the IDE [as described here](https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html#installing-using-boards-manager).
 3. Install the [Minitel1B library](https://github.com/eserandour/Minitel1B_Hard) as follows:
     - Download Minitel1B library as ZIP file.
     - In Arduino IDE, go to Sketch / Include Library / Add .ZIP Library and select your ZIP file.
 4. Install the [MinitelToolkit library](https://github.com/torresflo/MinitelToolkit) the same way.
-5. Connect your device using USB-C cable.
-6. In Arduino IDE, select the corresponding serial port in Menu Tools/Port.
+5. Install the [ArduinoJson library](https://arduinojson.org/) with Sketch / Include Library / Manage Libraries.
+6. Connect your device using USB-C cable.
+7. In Arduino IDE, select the corresponding serial port in Menu Tools/Port.
 > [!TIP]
 > If you have difficulties with USB driver, check [this sparkfun article](https://learn.sparkfun.com/tutorials/how-to-install-ch340-drivers/).
-7. Select ESP32 Dev Module in Tools/Board type/ESP32 Arduino.
+8. Select ESP32 Dev Module in Tools/Board type/ESP32 Arduino.
 
 Done! You should be ready to compile and deploy the application.
 
@@ -69,17 +70,23 @@ You can now deploy and run `3615-Wikipedia.ino` on your development board.
 
 ## Usage
 
-This is a super simple application, the purpose was mostly to test the development board.
+Once the Wi-Fi is connected, browse the English Wikipedia straight from your Minitel keyboard.
 
-After a successful Wi-Fi connection, the application willl ask you to enter a term to search on wikipedial (english version).
-Press the key `ENVOI` to validate the input.
+**Search.** Type a subject and press `ENVOI`.
 
-The board will perform a request to Wikipedia and displays the result on the screen.
+**Pick an article.** Wikipedia rarely returns a single match, so you get a list of results. Move with the arrow keys and press `ENVOI` to open one. If nothing matches but a close spelling exists, a *Did you mean?* screen offers it, press `ENVOI` to search the suggestion.
 
 ![Wikipedia on Minitel image](https://github.com/torresflo/3615-Wikipedia/blob/main/Images/Wikipedia.jpg)
 
-Press the key `SUITE` to display the next page and `RETOUR` to display the previous page.
-Press the key `SOMMAIRE` to start a new search.
+**Read.** The article is shown page by page, with the current section title and a `section / page` counter.
+- `SUITE` - next page
+- `RETOUR` - previous page
+- `GUIDE` - open the section list
+- `SOMMAIRE` - start a new search
+
+**Jump to a section.** From the section list, navigate the tree with the arrow keys (the `Left` and `Right` keys allow to move inside or outside a parent section), press `ENVOI` to read the selected section, or `GUIDE` to go back to the article.
+
+At any point, press `SOMMAIRE` to start over.
 
 ## Contributing
 
